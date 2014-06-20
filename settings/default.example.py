@@ -7,6 +7,8 @@ from fabric.api import env
 
 env.project_name = ''
 env.project_repo_url = ''
+env.project_use_node = True
+env.project_use_bower = True
 
 # Server settings
 
