@@ -16,9 +16,9 @@ nginx_template_dir = os.path.join(template_dir, 'nginx')
 
 
 def upload_apache_conf():
-    require('apache_root', 'url', 'project_root', 'project_name')
-    conf_path = os.path.join(env.apache_root, '%s.conf' % env.url)
-    wsgi_path = os.path.join(env.project_root, 'dist/apache/%s.wsgi' % env.url)
+    require('server_apache_root', 'site_url', 'site_root', 'project_name')
+    conf_path = os.path.join(env.server_apache_root, '%s.conf' % env.site_url)
+    wsgi_path = os.path.join(env.site_root, 'dist/apache/%s.wsgi' % env.site_url)
 
     upload_template('django.conf', conf_path, context=env, use_jinja=True, template_dir=apache_template_dir, \
         backup=False, mode=0755)
@@ -27,58 +27,58 @@ def upload_apache_conf():
 
 
 def upload_nginx_conf():
-    require('nginx_root', 'url', 'project_root', 'project_name')
-    path = os.path.join(env.nginx_root, '%s.conf' % env.url)
+    require('server_nginx_root', 'site_url', 'site_root', 'project_name')
+    path = os.path.join(env.server_nginx_root, '%s.conf' % env.site_url)
     upload_template('django.conf', path, context=env, use_jinja=True, template_dir=nginx_template_dir, \
         backup=False, mode=0755)
 
 
 def install_virtualenv():
-    require('project_root', 'virtualenv_dir', provided_by='e')
-    with cd(env.project_root):
-        if not exists(os.path.join(env.project_root, env.virtualenv_dir)):
-            run('virtualenv %s --no-site-packages' % env.virtualenv_dir)
+    require('site_root', 'site_virtualenv_dir', provided_by='e')
+    with cd(env.site_root):
+        if not exists(os.path.join(env.site_root, env.site_virtualenv_dir)):
+            run('virtualenv %s --no-site-packages' % env.site_virtualenv_dir)
 
 
 def install_requirements():
-    require('project_root', 'virtualenv_dir', provided_by='e')
-    with cd(env.project_root):
-        run('./%s/bin/pip install -r ./requirements.txt' % env.virtualenv_dir)
+    require('site_root', 'site_virtualenv_dir', provided_by='e')
+    with cd(env.site_root):
+        run('./%s/bin/pip install -r ./requirements.txt' % env.site_virtualenv_dir)
 
 
 def pull():
-    require('project_root', 'repo_url', 'repo_branch', provided_by='e')
-    if not exists(env.project_root):
-        with cd(os.path.dirname(env.project_root.rstrip('/'))):
-            run('git clone %s %s' % (env.repo_url, os.path.basename(env.project_root.rstrip('/'))))
+    require('site_root', 'repo_url', 'repo_branch', provided_by='e')
+    if not exists(env.site_root):
+        with cd(os.path.dirname(env.site_root.rstrip('/'))):
+            run('git clone %s %s' % (env.repo_url, os.path.basename(env.site_root.rstrip('/'))))
     
-    with cd(env.project_root):
+    with cd(env.site_root):
         run('git fetch')
         run('git checkout %s' % env.repo_branch)
         run('git pull origin %s' % env.repo_branch)
 
 
 def clean():
-    require('project_root', provided_by='e')
-    with cd(env.project_root):
+    require('site_root', provided_by='e')
+    with cd(env.site_root):
         run('find . -name \*.pyc -print -delete')
 
 
 def compile_css():
-    require('project_root', 'static_dir', provided_by='e')
-    with cd(os.path.join(env.project_root, env.static_dir)):
+    require('site_root', provided_by='e')
+    with cd(env.site_root):
         run('compass compile')
 
 
 def collect_static():
-    require('project_root', 'name', provided_by='e')
-    with cd(env.project_root):
+    require('site_root', 'name', provided_by='e')
+    with cd(env.site_root):
         run('%s manage.py collectstatic --settings=%s.settings.%s' % (env.python, env.project_name, env.name))
 
 
 def compress():
-    require('project_root', 'name', provided_by='e')
-    with cd(env.project_root):
+    require('site_root', 'name', provided_by='e')
+    with cd(env.site_root):
         run('%s manage.py compress --settings=%s.settings.%s' % (env.python, env.project_name, env.name))
 
 

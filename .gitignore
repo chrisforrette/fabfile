@@ -34,3 +34,10 @@ nosetests.xml
 .mr.developer.cfg
 .project
 .pydevproject
+
+# Settings
+
+settings/*
+!settings/__init__.py
+!settings/default.example.py
+
