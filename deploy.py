@@ -6,14 +6,45 @@ from fabric.context_managers import settings
 from fabric.operations import require
 
 
-__all__ = ['upload_apache_conf', 'upload_nginx_conf', 'install_virtualenv', 'install_requirements', \
-    'pull', 'clean', 'compile_css', 'collect_static', 'compress', 'restart_apache', 'restart_nginx', \
-    'deploy']
+__all__ = [
+    'install_ubuntu_packages',
+    'make_directories',
+    'set_owner',
+    'upload_apache_conf', 
+    'upload_nginx_conf', 
+    'install_virtualenv', 
+    'install_requirements',
+    'checkout_repo',
+    'pull_repo', 
+    'clean', 
+    'compile_css', 
+    'collect_static', 
+    'compress', 
+    'restart_apache',
+    'restart_nginx', 
+    'install',
+    'deploy'
+]
 
 here = os.path.abspath(os.path.dirname(__file__))
 template_dir = os.path.join(here, 'templates')
 apache_template_dir = os.path.join(template_dir, 'apache')
 nginx_template_dir = os.path.join(template_dir, 'nginx')
+
+ubuntu_packages = [
+    'openssl',
+    'python-software-properties',
+    'python-dev',
+    'git-core',
+    'apache2',
+    'nginx',
+    'libapache2-mod-wsgi',
+    'memcached',
+    'python-pip',
+    'postgresql',
+    'postgresql-client',
+    'postgresql-server-dev-all'
+]
 
 
 def _setup():
@@ -28,14 +59,20 @@ def install_ubuntu_packages():
     require('project_use_node', provided_by='e')
     with settings(user='root'):
         run('apt-get update')
-        run('apt-get -y install python-software-properties apache2 nginx libapache2-mod-wsgi memcached python-pip postgresql postgresql-client')
+        run('apt-get -y install %s' % ' '.join(ubuntu_packages))
         run('pip install virtualenv')
         if env.project_use_node:
             run('apt-get install npm')
 
+        set_owner()
+
 
 def make_directories():
-    _setup()
+    env.site_log_path = os.path.join(env.site_root, env.site_logs_dir)
+    env.site_apache_log_path = os.path.join(env.site_log_path, 'apache')
+    env.site_nginx_log_path = os.path.join(env.site_log_path, 'nginx')
+    env.site_dumps_path = os.path.join(env.site_root, env.site_db_dump_dir)
+
     run('mkdir -p %s' % env.site_log_path)
     run('mkdir -p %s' % env.site_apache_log_path)
     run('mkdir -p %s' % env.site_nginx_log_path)
@@ -43,7 +80,9 @@ def make_directories():
 
 
 def set_owner():
-    pass
+    with settings(user='root'):
+        run('chmod -R 0774 %s' % env.site_root.rstrip('/'))
+        run('chown -R %s:%s %s' % (env.project_name, env.project_name, env.site_root.rstrip('/')))
 
 
 def upload_apache_conf():
@@ -51,17 +90,19 @@ def upload_apache_conf():
     conf_path = os.path.join(env.server_apache_root, '%s.conf' % env.site_url)
     wsgi_path = os.path.join(env.site_root, 'dist/apache/%s.wsgi' % env.site_url)
 
-    upload_template('django.conf', conf_path, context=env, use_jinja=True, template_dir=apache_template_dir, \
-        backup=False, mode=0755)
-    upload_template('django.wsgi', wsgi_path, context=env, use_jinja=True, template_dir=apache_template_dir, \
-        backup=False, mode=0755)
+    with settings(user='root'):
+        upload_template('django.conf', conf_path, context=env, use_jinja=True, template_dir=apache_template_dir, \
+            backup=False, mode=0755)
+        upload_template('django.wsgi', wsgi_path, context=env, use_jinja=True, template_dir=apache_template_dir, \
+            backup=False, mode=0755)
 
 
 def upload_nginx_conf():
     require('server_nginx_root', 'site_url', 'site_root', 'project_name')
-    path = os.path.join(env.server_nginx_root, '%s.conf' % env.site_url)
-    upload_template('django.conf', path, context=env, use_jinja=True, template_dir=nginx_template_dir, \
-        backup=False, mode=0755)
+    with settings(user='root'):
+        path = os.path.join(env.server_nginx_root, '%s.conf' % env.site_url)
+        upload_template('django.conf', path, context=env, use_jinja=True, template_dir=nginx_template_dir, \
+            backup=False, mode=0755)
 
 
 def install_virtualenv():
@@ -86,10 +127,11 @@ def checkout_repo():
     require('site_root', 'project_repo_url', provided_by='e')
     if not exists(env.site_root):
         with cd(os.path.dirname(env.site_root.rstrip('/'))):
-            run('git clone %s %s' % (env.project_repo_url, os.path.basename(env.site_root.rstrip('/'))))
+            with settings(user='root'):
+                run('git clone %s %s' % (env.project_repo_url, os.path.basename(env.site_root.rstrip('/'))))
 
 
-def pull():
+def pull_repo():
     require('site_root', 'site_repo_branch', provided_by='e')
     with cd(env.site_root):
         run('git fetch')
@@ -122,11 +164,13 @@ def compress():
 
 
 def restart_apache():
-    run('service apache2 restart')
+    with settings(user='root'):
+        run('service apache2 restart')
 
 
 def restart_nginx():
-    run('service nginx restart')
+    with settings(user='root'):
+        run('service nginx restart')
 
 
 def install():
@@ -134,19 +178,18 @@ def install():
     checkout_repo()
     make_directories()
     install_virtualenv()
-    set_owner()
     upload_apache_conf()
     upload_nginx_conf()
     restart_apache()
     restart_nginx()
 
 def deploy():
-    pull()
+    clean()
+    pull_repo()
     upload_apache_conf()
     upload_nginx_conf()
     install_requirements()
-    clean()
-    compile_css()
+    # compile_css()
     collect_static()
     # compress()
     restart_apache()

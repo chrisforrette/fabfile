@@ -34,7 +34,7 @@ fab e:radtown deploy
 * `env.server_ip` The IP address for this server, used in Apache and Nginx config.
 * `env.server_apache_root` Absolute path to directory of Apache virtual hosts. Example: '/etc/apache2/sites-enabled/''
 * `env.server_nginx_root` Absolute path to directory of Nginx virtual hosts. Example: '/etc/nginx/sites-enabled/'
-* * `env.server_admin` Server admin email address used in Apache config.
+* `env.server_admin_email` Server admin email address used in Apache config.
 * `env.repo_branch` The Git branch name to use for this environment. Example: 'master'
 * `env.site_root` Absolute path to the root of the project. Git will checkout and serve the project from this location. Example: '/home/mysite.com/''
 * `env.site_virtualenv_dir` Directory path relative to `env.site_root` where virtualenv should be installed.
