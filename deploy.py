@@ -88,12 +88,12 @@ def set_owner():
 def upload_apache_conf():
     require('server_apache_root', 'site_url', 'site_root', 'project_name', provided_by='e')
     conf_path = os.path.join(env.server_apache_root, '%s.conf' % env.site_url)
-    wsgi_path = os.path.join(env.site_root, 'dist/apache/%s.wsgi' % env.site_url)
+    wsgi_path = os.path.join(env.site_root, 'dist/apache/wsgi.py' % env.site_url)
 
     with settings(user='root'):
         upload_template('django.conf', conf_path, context=env, use_jinja=True, template_dir=apache_template_dir, \
             backup=False, mode=0755)
-        upload_template('django.wsgi', wsgi_path, context=env, use_jinja=True, template_dir=apache_template_dir, \
+        upload_template('wsgi.py', wsgi_path, context=env, use_jinja=True, template_dir=apache_template_dir, \
             backup=False, mode=0755)
 
 
