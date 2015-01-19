@@ -71,11 +71,18 @@ def make_directories():
     env.site_log_path = os.path.join(env.site_root, env.site_logs_dir)
     env.site_apache_log_path = os.path.join(env.site_log_path, 'apache')
     env.site_nginx_log_path = os.path.join(env.site_log_path, 'nginx')
+
+    env.site_dist_path = os.path.join(env.site_root, 'dist')
+    env.site_dist_apache_path = os.path.join(env.site_dist_path, 'apache')
+    env.site_dist_nginx_path = os.path.join(env.site_dist_path, 'nginx')
+
     env.site_dumps_path = os.path.join(env.site_root, env.site_db_dump_dir)
 
     run('mkdir -p %s' % env.site_log_path)
     run('mkdir -p %s' % env.site_apache_log_path)
     run('mkdir -p %s' % env.site_nginx_log_path)
+    run('mkdir -p %s' % env.site_dist_apache_path)
+    run('mkdir -p %s' % env.site_dist_nginx_path)
     run('mkdir -p %s' % env.site_dumps_path)
 
 
@@ -174,7 +181,7 @@ def restart_nginx():
 
 
 def install():
-    install_ubuntu_packages()
+    # install_ubuntu_packages()
     checkout_repo()
     make_directories()
     install_virtualenv()
@@ -189,8 +196,8 @@ def deploy():
     upload_apache_conf()
     upload_nginx_conf()
     install_requirements()
-    # compile_css()
+    compile_css()
     collect_static()
-    # compress()
+    compress()
     restart_apache()
     restart_nginx()
